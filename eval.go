@@ -22,6 +22,57 @@ type Turtle struct {
 	IsPenUp bool
 }
 
+type TurtleController interface {
+	// Move steps. If steps is negative, move backward
+	// Should return the current position on completion.
+	Move(steps float64) (x, y float64, err error)
+	// Rotate clockwise. If deg is negative, rotate counter-clockwise.
+	// Should return the current heading on completion.
+	Rotate(deg float64) (heading float64, err error)
+	// PenUp sets the state of the pen to state. PenUp(true) to stop drawing, PenUp(false) to start again
+	PenUp(state bool) (bool, error)
+}
+
+type TextTurtle struct {
+	X, Y    float64
+	Heading float64
+	IsPenUp bool
+	Output  io.Writer
+}
+
+func deg2rad(deg float64) float64 {
+	return deg * math.Pi / 180
+}
+
+// Move steps. If steps is negative, move backward
+// Should return the current position on completion.
+func (t *TextTurtle) Move(steps float64) (x, y float64, err error) {
+	t.X = steps * math.Cos(deg2rad(t.Heading))
+	t.Y = steps * math.Sin(deg2rad(t.Heading))
+	fmt.Fprintf(t.Output, "Moved %v steps. Now at (%v, %v)\n", steps, t.X, t.Y)
+	return t.X, t.Y, nil
+}
+
+// Rotate clockwise. If deg is negative, rotate counter-clockwise.
+// Should return the current heading on completion.
+func (t *TextTurtle) Rotate(deg float64) (heading float64, err error) {
+	t.Heading = math.Mod(t.Heading+deg, 360)
+	fmt.Fprintf(t.Output, "Rotated %v degrees. Now facing %v\n", deg, t.Heading)
+	return t.Heading, nil
+}
+
+var penStateMap = map[bool]string{
+	false: "down",
+	true:  "up",
+}
+
+// PenUp sets the state of the pen to state. PenUp(true) to stop drawing, PenUp(false) to start again
+func (t *TextTurtle) PenUp(state bool) (bool, error) {
+	t.IsPenUp = state
+	fmt.Fprintf(t.Output, "Pen is now %v\n", penStateMap[t.IsPenUp])
+	return t.IsPenUp, nil
+}
+
 // Context for evaluation.
 type Context struct {
 	// User-provided functions.
@@ -29,11 +80,68 @@ type Context struct {
 	// Vars defined during evaluation.
 	Vars map[string]interface{}
 	// Turtle for drawing
-	Turtle Turtle
+	Turtle TurtleController
 	// Reader from which INPUT is read.
 	Input io.Reader
 	// Writer where PRINTing will write.
 	Output io.Writer
+}
+
+func RunCommandList(commands []Command, ctx *Context) error {
+	for index := 0; index < len(commands); {
+		cmd := commands[index]
+		//fmt.Fprintf(ctx.Output, "Got Cmd: %+v\n", cmd.Command)
+		switch {
+		case cmd.Forward != nil:
+			cmd := cmd.Forward
+			value, err := cmd.Expression.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			ctx.Turtle.Move(value.(float64))
+		case cmd.Backward != nil:
+			cmd := cmd.Backward
+			value, err := cmd.Expression.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			ctx.Turtle.Move(-value.(float64))
+			//ctx.Vars[cmd.Variable] = value
+		case cmd.Right != nil:
+			cmd := cmd.Right
+			value, err := cmd.Expression.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			ctx.Turtle.Rotate(value.(float64))
+		case cmd.Left != nil:
+			cmd := cmd.Left
+			value, err := cmd.Expression.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			ctx.Turtle.Rotate(-value.(float64))
+		case cmd.PenUp != nil:
+			ctx.Turtle.PenUp(true)
+		case cmd.PenDown != nil:
+			ctx.Turtle.PenUp(false)
+		case cmd.Repeat != nil:
+			cmd := cmd.Repeat
+			value, err := cmd.Times.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			for i := 0.0; i < value.(float64); i++ {
+				RunCommandList(cmd.Commands, ctx)
+			}
+			//fmt.Fprintf(ctx.Output, "repeat %v\n", value)
+		default:
+			panic("unsupported command " + repr.String(cmd))
+		}
+
+		index++
+	}
+	return nil
 }
 
 func (v *Value) Evaluate(ctx *Context) (interface{}, error) {
@@ -225,65 +333,9 @@ func (p *Program) Evaluate(r io.Reader, w io.Writer, functions map[string]Functi
 		Functions: functions,
 		Input:     r,
 		Output:    w,
+		Turtle:    &TextTurtle{Output: w},
 	}
 	return RunCommandList(p.Commands, ctx)
-}
-
-func RunCommandList(commands []Command, ctx *Context) error {
-	for index := 0; index < len(commands); {
-		cmd := commands[index]
-		//fmt.Fprintf(ctx.Output, "Got Cmd: %+v\n", cmd.Command)
-		switch {
-		case cmd.Forward != nil:
-			cmd := cmd.Forward
-			value, err := cmd.Expression.Evaluate(ctx)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(ctx.Output, "Move forward %v\n", value)
-			//ctx.Vars[cmd.Variable] = value
-
-		case cmd.Backward != nil:
-			cmd := cmd.Backward
-			value, err := cmd.Expression.Evaluate(ctx)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(ctx.Output, "Move backward %v\n", value)
-			//ctx.Vars[cmd.Variable] = value
-		case cmd.Right != nil:
-			cmd := cmd.Right
-			value, err := cmd.Expression.Evaluate(ctx)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(ctx.Output, "Move right %v\n", value)
-		case cmd.Left != nil:
-			cmd := cmd.Left
-			value, err := cmd.Expression.Evaluate(ctx)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(ctx.Output, "Move left %v\n", value)
-		case cmd.PenUp != nil:
-		case cmd.PenDown != nil:
-		case cmd.Repeat != nil:
-			cmd := cmd.Repeat
-			value, err := cmd.Times.Evaluate(ctx)
-			if err != nil {
-				return err
-			}
-			for i := 0.0; i < value.(float64); i++ {
-				RunCommandList(cmd.Commands, ctx)
-			}
-			//fmt.Fprintf(ctx.Output, "repeat %v\n", value)
-		default:
-			panic("unsupported command " + repr.String(cmd))
-		}
-
-		index++
-	}
-	return nil
 }
 
 func evaluateFloats(ctx *Context, lhs interface{}, rhsExpr Evaluatable) (float64, float64, error) {

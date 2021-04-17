@@ -1,4 +1,4 @@
-FORWARD 1
+FORWARD 1 + 0
 FD 2
 PENUP
 backward 3
