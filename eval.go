@@ -16,12 +16,6 @@ type Evaluatable interface {
 
 type Function func(args ...interface{}) (interface{}, error)
 
-type Turtle struct {
-	X, Y    float64
-	Heading float64
-	IsPenUp bool
-}
-
 type TurtleController interface {
 	// Move steps. If steps is negative, move backward
 	// Should return the current position on completion.
@@ -31,46 +25,6 @@ type TurtleController interface {
 	Rotate(deg float64) (heading float64, err error)
 	// PenUp sets the state of the pen to state. PenUp(true) to stop drawing, PenUp(false) to start again
 	PenUp(state bool) (bool, error)
-}
-
-type TextTurtle struct {
-	X, Y    float64
-	Heading float64
-	IsPenUp bool
-	Output  io.Writer
-}
-
-func deg2rad(deg float64) float64 {
-	return deg * math.Pi / 180
-}
-
-// Move steps. If steps is negative, move backward
-// Should return the current position on completion.
-func (t *TextTurtle) Move(steps float64) (x, y float64, err error) {
-	t.X = steps * math.Cos(deg2rad(t.Heading))
-	t.Y = steps * math.Sin(deg2rad(t.Heading))
-	fmt.Fprintf(t.Output, "Moved %v steps. Now at (%v, %v)\n", steps, t.X, t.Y)
-	return t.X, t.Y, nil
-}
-
-// Rotate clockwise. If deg is negative, rotate counter-clockwise.
-// Should return the current heading on completion.
-func (t *TextTurtle) Rotate(deg float64) (heading float64, err error) {
-	t.Heading = math.Mod(t.Heading+deg, 360)
-	fmt.Fprintf(t.Output, "Rotated %v degrees. Now facing %v\n", deg, t.Heading)
-	return t.Heading, nil
-}
-
-var penStateMap = map[bool]string{
-	false: "down",
-	true:  "up",
-}
-
-// PenUp sets the state of the pen to state. PenUp(true) to stop drawing, PenUp(false) to start again
-func (t *TextTurtle) PenUp(state bool) (bool, error) {
-	t.IsPenUp = state
-	fmt.Fprintf(t.Output, "Pen is now %v\n", penStateMap[t.IsPenUp])
-	return t.IsPenUp, nil
 }
 
 // Context for evaluation.
@@ -323,7 +277,7 @@ func (e *Expression) Evaluate(ctx *Context) (interface{}, error) {
 // 	return value, nil
 // }
 
-func (p *Program) Evaluate(r io.Reader, w io.Writer, functions map[string]Function) error {
+func (p *Program) Evaluate(turtle Turtle, r io.Reader, w io.Writer, functions map[string]Function) error {
 	if len(p.Commands) == 0 {
 		return nil
 	}
@@ -333,7 +287,7 @@ func (p *Program) Evaluate(r io.Reader, w io.Writer, functions map[string]Functi
 		Functions: functions,
 		Input:     r,
 		Output:    w,
-		Turtle:    &TextTurtle{Output: w},
+		Turtle:    turtle,
 	}
 	return RunCommandList(p.Commands, ctx)
 }

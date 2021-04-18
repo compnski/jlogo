@@ -2,8 +2,6 @@ package main
 
 import (
 	"io"
-	"log"
-	"os"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
@@ -50,27 +48,6 @@ var (
 		participle.UseLookahead(2),
 	)
 )
-
-func main() {
-	fileName := "test.logo"
-	r, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Error reading file %s, got %v", fileName, err)
-	}
-	defer r.Close()
-	program, err := Parse(r)
-	if err != nil {
-		log.Fatalf("Error parsing program, got %v", err)
-	}
-	log.Printf("%+v", program)
-
-	funcs := map[string]Function{}
-	err = program.Evaluate(os.Stdin, os.Stdout, funcs)
-	if err != nil {
-		log.Fatalf("Error running program, got %v", err)
-	}
-
-}
 
 func Parse(r io.Reader) (*Program, error) {
 	program := &Program{}
