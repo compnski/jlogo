@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
-	"github.com/chzyer/readline"
 	"log"
 	"os"
 	"time"
+
+	"github.com/chzyer/readline"
 )
 
 func NewWheel(pins []int) (*GPIOStepper, error) {
@@ -27,13 +28,14 @@ func main() {
 	flag.BoolVar(&usePiTurtle, "pi", false, "Use the pi turtle")
 	flag.StringVar(&fileName, "file", "", "Run this program")
 	flag.Parse()
-
+	log.Print("Welcome to jlogo!")
 	var turtle Turtle
 	if usePiTurtle {
 		log.Print("Using pi turtle!")
 		turtle = InitPiTurtle()
 		defer turtle.Close()
 	} else {
+		log.Print("Using text turtle!")
 		turtle = NewTextTurtle(os.Stdout)
 	}
 
