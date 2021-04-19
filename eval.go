@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io"
-	"math"
 	"time"
 
 	"github.com/alecthomas/repr"
-
-	"github.com/alecthomas/participle/v2"
 )
 
 type Evaluatable interface {
@@ -116,185 +112,6 @@ func RunCommandList(commands []Command, ctx *Context) error {
 	return nil
 }
 
-func (v *Value) Evaluate(ctx *Context) (interface{}, error) {
-	switch {
-	case v.Number != nil:
-		return *v.Number, nil
-	case v.String != nil:
-		return *v.String, nil
-	case v.Variable != nil:
-		value, ok := ctx.Vars[*v.Variable]
-		if !ok {
-			return nil, fmt.Errorf("unknown variable %q", *v.Variable)
-		}
-		return value, nil
-	case v.Subexpression != nil:
-		return v.Subexpression.Evaluate(ctx)
-		// case v.Call != nil:
-		// 	return v.Call.Evaluate(ctx)
-	}
-	panic("unsupported value type" + repr.String(v))
-}
-
-func (f *Factor) Evaluate(ctx *Context) (interface{}, error) {
-	base, err := f.Base.Evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if f.Exponent == nil {
-		return base, nil
-	}
-	baseNum, exponentNum, err := evaluateFloats(ctx, base, f.Exponent)
-	if err != nil {
-		return nil, participle.Errorf(f.Pos, "invalid factor: %s", err)
-	}
-	return math.Pow(baseNum, exponentNum), nil
-}
-
-func (o *OpFactor) Evaluate(ctx *Context, lhs interface{}) (interface{}, error) {
-	lhsNumber, rhsNumber, err := evaluateFloats(ctx, lhs, o.Factor)
-	if err != nil {
-		return nil, participle.Errorf(o.Pos, "invalid arguments for %s: %s", o.Operator, err)
-	}
-	switch o.Operator {
-	case "*":
-		return lhsNumber * rhsNumber, nil
-	case "/":
-		return lhsNumber / rhsNumber, nil
-	}
-	panic("unreachable")
-}
-
-func (t *Term) Evaluate(ctx *Context) (interface{}, error) {
-	lhs, err := t.Left.Evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, right := range t.Right {
-		rhs, err := right.Evaluate(ctx, lhs)
-		if err != nil {
-			return nil, err
-		}
-		lhs = rhs
-	}
-	return lhs, nil
-}
-
-func (o *OpTerm) Evaluate(ctx *Context, lhs interface{}) (interface{}, error) {
-	lhsNumber, rhsNumber, err := evaluateFloats(ctx, lhs, o.Term)
-	if err != nil {
-		return nil, participle.Errorf(o.Pos, "invalid arguments for %s: %s", o.Operator, err)
-	}
-	switch o.Operator {
-	case "+":
-		return lhsNumber + rhsNumber, nil
-	case "-":
-		return lhsNumber - rhsNumber, nil
-	}
-	panic("unreachable")
-}
-
-func (c *Cmp) Evaluate(ctx *Context) (interface{}, error) {
-	lhs, err := c.Left.Evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, right := range c.Right {
-		rhs, err := right.Evaluate(ctx, lhs)
-		if err != nil {
-			return nil, err
-		}
-		lhs = rhs
-	}
-	return lhs, nil
-}
-
-func (o *OpCmp) Evaluate(ctx *Context, lhs interface{}) (interface{}, error) {
-	rhs, err := o.Cmp.Evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	switch lhs := lhs.(type) {
-	case float64:
-		rhs, ok := rhs.(float64)
-		if !ok {
-			return nil, participle.Errorf(o.Pos, "rhs of %s must be a number", o.Operator)
-		}
-		switch o.Operator {
-		case "=":
-			return lhs == rhs, nil
-		case "!=":
-			return lhs != rhs, nil
-		case "<":
-			return lhs < rhs, nil
-		case ">":
-			return lhs > rhs, nil
-		case "<=":
-			return lhs <= rhs, nil
-		case ">=":
-			return lhs >= rhs, nil
-		}
-	case string:
-		rhs, ok := rhs.(string)
-		if !ok {
-			return nil, participle.Errorf(o.Pos, "rhs of %s must be a string", o.Operator)
-		}
-		switch o.Operator {
-		case "=":
-			return lhs == rhs, nil
-		case "!=":
-			return lhs != rhs, nil
-		case "<":
-			return lhs < rhs, nil
-		case ">":
-			return lhs > rhs, nil
-		case "<=":
-			return lhs <= rhs, nil
-		case ">=":
-			return lhs >= rhs, nil
-		}
-	default:
-		return nil, participle.Errorf(o.Pos, "lhs of %s must be a number or string", o.Operator)
-	}
-	panic("unreachable")
-}
-
-func (e *Expression) Evaluate(ctx *Context) (interface{}, error) {
-	lhs, err := e.Left.Evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, right := range e.Right {
-		rhs, err := right.Evaluate(ctx, lhs)
-		if err != nil {
-			return nil, err
-		}
-		lhs = rhs
-	}
-	return lhs, nil
-}
-
-// func (c *Call) Evaluate(ctx *Context) (interface{}, error) {
-// 	function, ok := ctx.Functions[c.Name]
-// 	if !ok {
-// 		return nil, participle.Errorf(c.Pos, "unknown function %q", c.Name)
-// 	}
-// 	args := []interface{}{}
-// 	for _, arg := range c.Args {
-// 		value, err := arg.Evaluate(ctx)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		args = append(args, value)
-// 	}
-
-// 	value, err := function(args...)
-// 	if err != nil {
-// 		return nil, participle.Errorf(c.Pos, "call to %s() failed", c.Name)
-// 	}
-// 	return value, nil
-// }
-
 func (p *Program) Evaluate(turtle Turtle, r io.Reader, w io.Writer, functions map[string]Function) error {
 	if len(p.Commands) == 0 {
 		return nil
@@ -308,20 +125,4 @@ func (p *Program) Evaluate(turtle Turtle, r io.Reader, w io.Writer, functions ma
 		Turtle:    turtle,
 	}
 	return RunCommandList(p.Commands, ctx)
-}
-
-func evaluateFloats(ctx *Context, lhs interface{}, rhsExpr Evaluatable) (float64, float64, error) {
-	rhs, err := rhsExpr.Evaluate(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	lhsNumber, ok := lhs.(float64)
-	if !ok {
-		return 0, 0, fmt.Errorf("lhs must be a number")
-	}
-	rhsNumber, ok := rhs.(float64)
-	if !ok {
-		return 0, 0, fmt.Errorf("rhs must be a number")
-	}
-	return lhsNumber, rhsNumber, nil
 }
