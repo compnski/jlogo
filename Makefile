@@ -6,3 +6,6 @@ buildpi:
 
 installpi: buildpi
 	scp bin/logoj-pi test.logo turtle.local:
+
+runpi:	installpi
+	ssh turtle.local 'sudo ./logoj-pi -pi'

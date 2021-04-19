@@ -37,7 +37,7 @@ var (
 		{"Number", `[-+]?(\d*\.)?\d+`, nil},
 		{"Ident", `[a-zA-Z_]\w*`, nil},
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`, nil},
-		{"EOL", `[\n\r]+`, nil},
+		{"EOL", `[\n\r\d]+`, nil},
 		{"whitespace", `[ \t]+`, nil},
 	})
 
@@ -55,7 +55,7 @@ func Parse(r io.Reader) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	program.init()
+
 	return program, nil
 }
 
@@ -86,6 +86,12 @@ type Left struct {
 	Expression Expression `("LEFT" | "LT") @@`
 }
 
+type Sleep struct {
+	Pos lexer.Position
+
+	Expression Expression `("SLEEP" | "SP") @@`
+}
+
 type PenUp struct {
 	Pos   lexer.Position
 	Ident bool `("PENUP" | "PU")`
@@ -100,6 +106,11 @@ type Repeat struct {
 	Pos      lexer.Position
 	Times    *Expression `"REPEAT" @@`
 	Commands []Command   `@@+`
+}
+
+type Comment struct {
+	Pos      lexer.Position
+	Commands []Command `"#" @@*`
 }
 
 type Stop struct {
@@ -133,6 +144,8 @@ type Command struct {
 	PenUp    *PenUp    ` @@ |`
 	PenDown  *PenDown  ` @@ |`
 	Repeat   *Repeat   ` @@ |`
+	Sleep    *Sleep    ` @@ |`
+	Comment  *Comment  ` @@ |`
 	Stop     *Stop     ` @@)`
 
 	// 	Remark *Remark `(   @@`
@@ -155,14 +168,6 @@ type Program struct {
 	Pos lexer.Position
 
 	Commands []Command `(@@ EOL)*`
-}
-
-func (p *Program) init() {
-	// 	p.Table = map[int]*Command{}
-	// 	for index, cmd := range p.Commands {
-	// 		cmd.Index = index
-	// 		p.Table[cmd.Line] = cmd
-	// 	}
 }
 
 type Operator string

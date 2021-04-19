@@ -2,18 +2,10 @@ package main
 
 import (
 	"flag"
+	"github.com/chzyer/readline"
 	"log"
 	"os"
 	"time"
-)
-
-const (
-	PinPenServo = 18
-)
-
-var (
-	PinsLeftWheel  = []int{6, 13, 19, 26}
-	PinsRightWheel = []int{12, 16, 20, 21}
 )
 
 func NewWheel(pins []int) (*GPIOStepper, error) {
@@ -31,10 +23,54 @@ func NewWheel(pins []int) (*GPIOStepper, error) {
 
 func main() {
 	var usePiTurtle bool
+	var fileName string
 	flag.BoolVar(&usePiTurtle, "pi", false, "Use the pi turtle")
+	flag.StringVar(&fileName, "file", "", "Run this program")
 	flag.Parse()
 
-	fileName := "test.logo"
+	var turtle Turtle
+	if usePiTurtle {
+		log.Print("Using pi turtle!")
+		turtle = InitPiTurtle()
+		defer turtle.Close()
+	} else {
+		turtle = NewTextTurtle(os.Stdout)
+	}
+
+	if fileName != "" {
+		runProgramFromFile(fileName, turtle)
+	} else {
+		runProgramFromStdin(turtle)
+	}
+}
+
+func runProgramFromStdin(turtle Turtle) {
+	rl, err := readline.New("> ")
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
+	program := &Program{}
+
+	for {
+		line, err := rl.Readline()
+		if err != nil { // io.EOF
+			break
+		}
+		line += "\n"
+		err = basicParser.ParseString("", line, program) //program, err := Parse(strings.NewReader(line))
+		if err != nil {
+			log.Fatalf("Error parsing line [%v], got %v", line, err)
+		}
+		funcs := map[string]Function{}
+		err = program.Evaluate(turtle, os.Stdin, os.Stdout, funcs)
+		if err != nil {
+			log.Fatalf("Error running program, got %v", err)
+		}
+	}
+}
+
+func runProgramFromFile(fileName string, turtle Turtle) {
 	r, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Error reading file %s, got %v", fileName, err)
@@ -46,46 +82,9 @@ func main() {
 	}
 	log.Printf("%+v", program)
 
-	var turtle Turtle
-	if usePiTurtle {
-		log.Print("Using pi turtle!")
-		turtle = InitPiTurtle()
-	} else {
-		turtle = NewTextTurtle(os.Stdout)
-	}
-
 	funcs := map[string]Function{}
 	err = program.Evaluate(turtle, os.Stdin, os.Stdout, funcs)
 	if err != nil {
 		log.Fatalf("Error running program, got %v", err)
 	}
-
-}
-
-func InitPiTurtle() *PiTurtle {
-	pwm, err := NewPiBlaster(PinPenServo)
-	if err != nil {
-		log.Fatal(err)
-	}
-	servo, err := NewPWMServo(pwm, 0, 180, 0.05, 0.2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pen := ServoPen{
-		Servo: servo,
-	}
-
-	leftWheel, err := NewWheel(PinsLeftWheel)
-	if err != nil {
-		log.Fatal(err)
-	}
-	rightWheel, err := NewWheel(PinsRightWheel)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return NewPiTurtle(os.Stdout,
-		pen,
-		leftWheel,
-		rightWheel)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"time"
 
 	"github.com/alecthomas/repr"
 
@@ -46,6 +47,13 @@ func RunCommandList(commands []Command, ctx *Context) error {
 		cmd := commands[index]
 		//fmt.Fprintf(ctx.Output, "Got Cmd: %+v\n", cmd.Command)
 		switch {
+		case cmd.Sleep != nil:
+			cmd := cmd.Sleep
+			value, err := cmd.Expression.Evaluate(ctx)
+			if err != nil {
+				return err
+			}
+			time.Sleep(time.Millisecond * time.Duration(value.(float64)))
 		case cmd.Forward != nil:
 			cmd := cmd.Forward
 			value, err := cmd.Expression.Evaluate(ctx)
@@ -67,18 +75,24 @@ func RunCommandList(commands []Command, ctx *Context) error {
 			if err != nil {
 				return err
 			}
-			ctx.Turtle.Rotate(value.(float64))
+			ctx.Turtle.Rotate(-value.(float64))
 		case cmd.Left != nil:
 			cmd := cmd.Left
 			value, err := cmd.Expression.Evaluate(ctx)
 			if err != nil {
 				return err
 			}
-			ctx.Turtle.Rotate(-value.(float64))
+			ctx.Turtle.Rotate(value.(float64))
 		case cmd.PenUp != nil:
-			ctx.Turtle.PenUp(true)
+			_, err := ctx.Turtle.PenUp(true)
+			if err != nil {
+				return err
+			}
 		case cmd.PenDown != nil:
-			ctx.Turtle.PenUp(false)
+			_, err := ctx.Turtle.PenUp(false)
+			if err != nil {
+				return err
+			}
 		case cmd.Repeat != nil:
 			cmd := cmd.Repeat
 			value, err := cmd.Times.Evaluate(ctx)
@@ -86,9 +100,13 @@ func RunCommandList(commands []Command, ctx *Context) error {
 				return err
 			}
 			for i := 0.0; i < value.(float64); i++ {
-				RunCommandList(cmd.Commands, ctx)
+				err := RunCommandList(cmd.Commands, ctx)
+				if err != nil {
+					return err
+				}
 			}
-			//fmt.Fprintf(ctx.Output, "repeat %v\n", value)
+		//fmt.Fprintf(ctx.Output, "repeat %v\n",
+		case cmd.Comment != nil:
 		default:
 			panic("unsupported command " + repr.String(cmd))
 		}

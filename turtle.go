@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"os"
 	"time"
 )
 
@@ -23,6 +25,7 @@ type Turtle interface {
 	Rotate(deg float64) (heading float64, err error)
 	PenUp(state bool) (bool, error)
 	State() BaseTurtle
+	Close()
 }
 
 func NewTextTurtle(w io.Writer) *TextTurtle {
@@ -39,6 +42,10 @@ type TextTurtle struct {
 
 func deg2rad(deg float64) float64 {
 	return deg * math.Pi / 180
+}
+
+func (t BaseTurtle) Close() {
+
 }
 
 func (t BaseTurtle) State() BaseTurtle {
@@ -116,6 +123,15 @@ type PiTurtle struct {
 	Delay                 time.Duration
 }
 
+const (
+	PinPenServo = 18
+)
+
+var (
+	PinsLeftWheel  = []int{6, 13, 19, 26}
+	PinsRightWheel = []int{21, 20, 16, 12}
+)
+
 func NewPiTurtle(w io.Writer, pen ServoPen, leftWheel, rightWheel Stepper) *PiTurtle {
 	return &PiTurtle{
 		Turtle:     NewTextTurtle(w),
@@ -123,18 +139,58 @@ func NewPiTurtle(w io.Writer, pen ServoPen, leftWheel, rightWheel Stepper) *PiTu
 		LeftWheel:  leftWheel,
 		RightWheel: rightWheel,
 		Sleep:      time.Sleep,
-		Delay:      time.Millisecond,
+		Delay:      time.Millisecond * 2,
 	}
+}
+
+func InitPiTurtle() *PiTurtle {
+	pwm, err := NewPiBlaster(PinPenServo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	servo, err := NewPWMServo(pwm, 0, 90, 0.05, 0.2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Servo: %+v", servo)
+	pen := ServoPen{
+		Servo:     servo,
+		UpAngle:   0,
+		DownAngle: 90,
+	}
+
+	leftWheel, err := NewWheel(PinsLeftWheel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rightWheel, err := NewWheel(PinsRightWheel)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return NewPiTurtle(os.Stdout,
+		pen,
+		leftWheel,
+		rightWheel)
+}
+
+func (t *PiTurtle) Close() {
+	t.PenUp(true)
+	// 	t.LeftWheel.Close()
+	// 	t.RightWheel.Close()
+	// 	t.Pen.Close()
 }
 
 // Move steps. If steps is negative, move backward
 // Should return the current position on completion.
 func (t *PiTurtle) Move(steps float64) (x, y float64, err error) {
+	//steps *= -1
 	var dir = 1
 	if steps < 0 {
 		dir = -1
 		steps = -steps
 	}
+	steps *= 100
 	// TODO Figure out mapping of steps to stepper steps
 	// TODO Figure float -> int issues here
 	for step := 0.0; step < steps; step++ {
@@ -161,6 +217,7 @@ func (t *PiTurtle) Rotate(deg float64) (heading float64, err error) {
 		dir = -1
 		deg = -deg
 	}
+	deg *= 20
 	// TODO Figure out mapping of deg to stepper steps
 	// TODO Figure float -> int issues here
 	for step := 0.0; step < deg; step++ {
@@ -190,5 +247,6 @@ func (t *PiTurtle) PenUp(state bool) (bool, error) {
 	if err != nil {
 		return t.Turtle.State().IsPenUp, err
 	}
+	t.Sleep(t.Delay)
 	return t.Turtle.PenUp(state)
 }

@@ -39,7 +39,7 @@ func NewPWMServo(p PWM, minAngle, maxAngle, minDutyCycle, maxDutyCycle float64) 
 		MaxAngle:     maxAngle,
 		MinDutyCycle: minDutyCycle,
 		MaxDutyCycle: maxDutyCycle,
-		angleFactor:  (maxAngle - minAngle) / (maxDutyCycle - minDutyCycle),
+		angleFactor:  (maxDutyCycle - minDutyCycle) / (maxAngle - minAngle),
 	}, nil
 }
 
@@ -47,7 +47,9 @@ func (s *PWMServo) Angle(deg float64) error {
 	if deg < s.MinAngle || deg > s.MaxAngle {
 		return ErrRange
 	}
-	return s.PWM.DutyCycle(s.MinDutyCycle + deg*s.angleFactor)
+	dc := s.MinDutyCycle + deg*s.angleFactor
+	//log.Printf("deg=%v, DC=%v", deg, dc)
+	return s.PWM.DutyCycle(dc)
 }
 
 type PiBlaster struct {
@@ -61,12 +63,14 @@ func NewPiBlaster(pin int) (*PiBlaster, error) {
 }
 
 func (p *PiBlaster) DutyCycle(dc float64) error {
-	_, err := fmt.Fprintf(p.Handle, fmt.Sprintf("%d=%f", p.Pin, dc))
+	cmd := fmt.Sprintf("%d=%v\n", p.Pin, dc)
+	log.Printf(cmd)
+	_, err := fmt.Fprintf(p.Handle, cmd)
 	return err
 }
 
 func (p *PiBlaster) Release() error {
-	_, err := fmt.Fprintf(p.Handle, fmt.Sprintf("release %d", p.Pin))
+	_, err := fmt.Fprintf(p.Handle, fmt.Sprintf("release %d\n", p.Pin))
 	return err
 
 }
@@ -111,14 +115,15 @@ func NewGPIO(pin int) (*PiGPIO, error) {
 }
 
 var enableMap = map[bool]string{
-	true:  "1",
-	false: "0",
+	true:  "1\n",
+	false: "0\n",
 }
 
 func (g *PiGPIO) Enable(b bool) error {
 	if g.Handle == nil {
 		return ErrUnitialized
 	}
+	//log.Printf("%v=%v", g.Pin, b)
 	_, err := fmt.Fprintf(g.Handle, enableMap[b])
 	return err
 }
@@ -178,9 +183,14 @@ func (s *GPIOStepper) Backward() error {
 }
 
 func (s *GPIOStepper) StepOne(dir int) error {
+	//log.Printf("StepOne %v", dir)
 	s.currentStep = (s.currentStep + dir) % len(s.Pattern)
+	if s.currentStep < 0 {
+		s.currentStep = len(s.Pattern) + s.currentStep
+	}
 	for pin := range s.Pins {
 		if err := s.Pins[pin].Enable(s.Pattern[s.currentStep][pin]); err != nil {
+			log.Printf("Got error: %v", err)
 			return err
 		}
 	}
