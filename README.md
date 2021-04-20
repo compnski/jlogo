@@ -1,17 +1,22 @@
 # jlogo
 Toy logo interpreter that can control a physical rasberry-pi based turtle.
 
+# Code
+Parsing is done with the https://github.com/alecthomas/participle library, which creates a grammar from your structs, like JSON parsing.
+You get back the AST in the form of the structs you create.
+I borrowed heavily from the BASIC example to get support for expressions.
+
 # TODO
 * Better calibration for turns
 * Progress report during long drawings
 * Cancel action in progress
-* Estimated runtime when drawing
- 
+* Estimated runtime when drawing 
+* LOGO procedures
+* Additional language features
 
 # Videos
-Mark II in action: https://youtu.be/Cr2jLVUYcts
-Mark I in action : https://youtu.be/Abdd7Wg_pFM
-
+* Mark II in action: https://youtu.be/Cr2jLVUYcts
+* Mark I in action : https://youtu.be/Abdd7Wg_pFM
 
 # Building it
 ## Tinkercard Links:
@@ -28,5 +33,5 @@ Mark I in action : https://youtu.be/Abdd7Wg_pFM
 * 3.7v Lipo battery: https://www.amazon.com/gp/product/B0867KDMY7
 * Rasberry Pi
 * Assorted wires, connectors, etc
- * JST 1.25mm connectors: https://www.amazon.com/gp/product/B013JRWCBU
- * JST 20AWG connectors: https://www.amazon.com/gp/product/B01M5AHF0Z
+  * JST 1.25mm connectors: https://www.amazon.com/gp/product/B013JRWCBU
+  * JST 20AWG connectors: https://www.amazon.com/gp/product/B01M5AHF0Z
