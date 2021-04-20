@@ -16,14 +16,6 @@ I borrowed heavily from the BASIC example to get support for expressions.
 * Pen tube: *https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
 * Wheel (But prefer rubber 65mm wheels): https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
 
-# TODO
-* Better calibration for turns
-* Progress report during long drawings
-* Cancel action in progress
-* Estimated runtime when drawing 
-* LOGO procedures
-* Additional language features
-
 ## Parts
 * 5v power regulator: https://www.amazon.com/gp/product/B076P4C42B
 * SG90 Servo: https://www.amazon.com/gp/product/B07Q6JGWNV
@@ -35,3 +27,11 @@ I borrowed heavily from the BASIC example to get support for expressions.
 * Assorted wires, connectors, etc
   * JST 1.25mm connectors: https://www.amazon.com/gp/product/B013JRWCBU
   * JST 20AWG connectors: https://www.amazon.com/gp/product/B01M5AHF0Z
+
+# TODO
+* Better calibration for turns
+* Progress report during long drawings
+* Cancel action in progress
+* Estimated runtime when drawing 
+* LOGO procedures
+* Additional language features
