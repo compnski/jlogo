@@ -6,14 +6,6 @@ Parsing is done with the https://github.com/alecthomas/participle library, which
 You get back the AST in the form of the structs you create.
 I borrowed heavily from the BASIC example to get support for expressions.
 
-# TODO
-* Better calibration for turns
-* Progress report during long drawings
-* Cancel action in progress
-* Estimated runtime when drawing 
-* LOGO procedures
-* Additional language features
-
 # Videos
 * Mark II in action: https://youtu.be/Cr2jLVUYcts
 * Mark I in action : https://youtu.be/Abdd7Wg_pFM
@@ -23,6 +15,14 @@ I borrowed heavily from the BASIC example to get support for expressions.
 * Turtle Base: https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
 * Pen tube: *https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
 * Wheel (But prefer rubber 65mm wheels): https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
+
+# TODO
+* Better calibration for turns
+* Progress report during long drawings
+* Cancel action in progress
+* Estimated runtime when drawing 
+* LOGO procedures
+* Additional language features
 
 ## Parts
 * 5v power regulator: https://www.amazon.com/gp/product/B076P4C42B
