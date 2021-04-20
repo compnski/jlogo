@@ -12,9 +12,9 @@ I borrowed heavily from the BASIC example to get support for expressions.
 
 # Building it
 ## Tinkercard Links:
-* Turtle Base: https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
-* Pen tube: *https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
-* Wheel (But prefer rubber 65mm wheels): https://www.tinkercad.com/dashboard?type=tinkercad&collection=projects&id=28NQXupXaBR
+* Turtle Base: https://www.tinkercad.com/things/8hkSRL1vm1w
+* Pen tube: https://www.tinkercad.com/things/hxUoY43A40C
+* Wheel (But prefer rubber 65mm wheels): https://www.tinkercad.com/things/hxUoY43A40C
 
 ## Parts
 * 5v power regulator: https://www.amazon.com/gp/product/B076P4C42B
