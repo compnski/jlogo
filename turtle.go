@@ -190,10 +190,10 @@ func (t *PiTurtle) Move(steps float64) (x, y float64, err error) {
 		dir = -1
 		steps = -steps
 	}
-	steps *= 100
+	stepperSteps := steps * 100
 	// TODO Figure out mapping of steps to stepper steps
 	// TODO Figure float -> int issues here
-	for step := 0.0; step < steps; step++ {
+	for step := 0.0; step < stepperSteps; step++ {
 		err = t.LeftWheel.StepOne(dir)
 		if err == nil {
 			err = t.RightWheel.StepOne(dir)
@@ -217,10 +217,10 @@ func (t *PiTurtle) Rotate(deg float64) (heading float64, err error) {
 		dir = -1
 		deg = -deg
 	}
-	deg *= 20
+	stepperSteps := deg * 23
 	// TODO Figure out mapping of deg to stepper steps
 	// TODO Figure float -> int issues here
-	for step := 0.0; step < deg; step++ {
+	for step := 0.0; step < stepperSteps; step++ {
 		err = t.LeftWheel.StepOne(dir)
 		if err == nil {
 			err = t.RightWheel.StepOne(-dir)

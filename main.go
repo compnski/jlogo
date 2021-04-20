@@ -62,12 +62,12 @@ func runProgramFromStdin(turtle Turtle) {
 		line += "\n"
 		err = basicParser.ParseString("", line, program) //program, err := Parse(strings.NewReader(line))
 		if err != nil {
-			log.Fatalf("Error parsing line [%v], got %v", line, err)
+			log.Printf("Error parsing line [%v], got %v", line, err)
 		}
 		funcs := map[string]Function{}
 		err = program.Evaluate(turtle, os.Stdin, os.Stdout, funcs)
 		if err != nil {
-			log.Fatalf("Error running program, got %v", err)
+			log.Printf("Error running program, got %v", err)
 		}
 	}
 }
