@@ -1,11 +1,11 @@
 build:
-	go build -o bin/logoj .
+	go build -o bin/jlogo .
 
 buildpi:
-	GOARM=6 GOARCH=arm GOOS=linux go build -o bin/logoj-pi . 
+	GOARM=6 GOARCH=arm GOOS=linux go build -o bin/jlogo-pi . 
 
 installpi: buildpi
-	scp bin/logoj-pi test.logo turtle.local:
+	scp bin/jlogo-pi test.logo turtle.local:
 
 runpi:	installpi
-	ssh turtle.local 'sudo ./logoj-pi -pi'
+	ssh turtle.local 'sudo ./jlogo-pi -pi'
