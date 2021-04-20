@@ -104,7 +104,7 @@ type PenDown struct {
 type Repeat struct {
 	Pos      lexer.Position
 	Times    *Expression `"REPEAT" @@`
-	Commands []Command   `@@+`
+	Commands []Command   `"[" @@+ "]"`
 }
 
 type Comment struct {
